@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <netinet/in.h>
 #include <stdio.h>
 #include <endian.h>
 #include<arpa/inet.h>
@@ -25,6 +26,10 @@ int main() {
 	//to set socket options after creating the socket, use setsockopt()
 	int val = 1;
 	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val));
+	struct timeval tv;
+	tv.tv_sec = 5;
+	tv.tv_usec = 0;
+	setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO,&tv, sizeof(tv));
 	//SOL_SOCKET specifies that so_reuseaddr is a socket layer option, not a protocol layer one.
 	//SO_REUSEADDR  allows a socket to bind an address and port which is already in use, but prev socket
 	//has not fully been released. without it, bind() will fail when you restart the server.
@@ -33,9 +38,9 @@ int main() {
 	//ntohs and ntohl convert the numbers in req big endian formats.
 	struct sockaddr_in addr= {};
 	addr.sin_family = AF_INET;
-	addr.sin_port = ntohs(1234);
-	addr.sin_addr.s_addr = ntohl(0);
-	int rv = bind(fd, (const sockaddr*)&addr, sizeof(addr));
+	addr.sin_port = htons(1234);
+	addr.sin_addr.s_addr = htonl(0);
+	int rv = bind(fd, (struct sockaddr*)&addr, sizeof(addr));
 	if(rv){
 	cout<<"bind()";
 	}
@@ -53,7 +58,7 @@ int main() {
 	struct sockaddr_in client_addr ={};
 	socklen_t addrlen = sizeof(client_addr);
 	int connfd = accept(fd, (struct sockaddr* )&client_addr, &addrlen);
-	//the accept syscallalso returns the peers address, addrlen is both input and output.
+	//the accept syscall also returns the peers address, addrlen is both input and output.
 	
 	if(connfd<0){continue;}
 	dummy(connfd);
@@ -66,14 +71,17 @@ int main() {
 
 static void dummy(int connfd){
 	char rbuf[64]=  {};
-	ssize_t n = read(connfd, &rbuf, sizeof(rbuf)-1);
+	ssize_t n = read(connfd, rbuf, sizeof(rbuf)-1);
 	
 	if(n<0){
 	cout<<"read() error";
 	return;
+	} else if(n==0){
+	cout<<"client dc";
 	}
-	
+	rbuf[n] = '\0';
 	cout<<"client says: \n"<<rbuf;
+
 	char wbuf[] = "world";
 	write(connfd, wbuf, strlen(wbuf));
 }

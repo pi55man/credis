@@ -21,15 +21,16 @@ int main(){
 
 	struct sockaddr_in addr = {};
 	addr.sin_family=AF_INET;
-	addr.sin_port=ntohs(1234);
-	addr.sin_addr.s_addr = ntohl(INADDR_LOOPBACK);
+	addr.sin_port=htons(1234);
+	addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 	int rv = connect(fd, (struct sockaddr*)&addr, sizeof(addr));
-	char msg[] = "hello";
+	
+	char* msg = "hello";
 	ssize_t bytes_sent = write(fd, msg, strlen(msg));
-	bytes_sent <0? cout<<"write error client. " : cout<< "write sent client";
+	bytes_sent <0? cout<<"write error client. " : cout<< "write sent client: \n" << bytes_sent;
 	char rbuf[64] = {};
 	ssize_t n = read(fd, rbuf, sizeof(rbuf)-1);
-	cout<<"server says: \n" << rbuf;
+	cout<<endl<<"server says: \n" << rbuf;
 	close(fd);
 	return 0;
 
