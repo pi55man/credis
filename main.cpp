@@ -66,11 +66,13 @@ int main() {
 
 static void dummy(int connfd){
 	char rbuf[64]=  {};
-	ssize_t n = read(connfd, rbuf, sizeof(rbuf)-1);
+	ssize_t n = read(connfd, &rbuf, sizeof(rbuf)-1);
+	
 	if(n<0){
 	cout<<"read() error";
 	return;
 	}
+	
 	cout<<"client says: \n"<<rbuf;
 	char wbuf[] = "world";
 	write(connfd, wbuf, strlen(wbuf));

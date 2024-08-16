@@ -23,12 +23,10 @@ int main(){
 	addr.sin_family=AF_INET;
 	addr.sin_port=ntohs(1234);
 	addr.sin_addr.s_addr = ntohl(INADDR_LOOPBACK);
-	int rv = connect(fd, (const struct sockaddr*)&addr, sizeof(addr));
+	int rv = connect(fd, (struct sockaddr*)&addr, sizeof(addr));
 	char msg[] = "hello";
 	ssize_t bytes_sent = write(fd, msg, strlen(msg));
-	if(bytes_sent<0){
-	cout<<"write() client.";
-	}
+	bytes_sent <0? cout<<"write error client. " : cout<< "write sent client";
 	char rbuf[64] = {};
 	ssize_t n = read(fd, rbuf, sizeof(rbuf)-1);
 	cout<<"server says: \n" << rbuf;
