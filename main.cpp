@@ -8,7 +8,11 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+
 using namespace std;
+
+static void dummy(int connfd);
+
 int main() {
   	int fd = socket(AF_INET,SOCK_STREAM,0);
 	//af_inet is for ipv4. AF_INET6 is for ipv6.for simplicity, we consider ipv4.
@@ -45,10 +49,25 @@ int main() {
 	struct sockaddr_in client_addr ={};
 	socklen_t addrlen = sizeof(client_addr);
 	int connfd = accept(fd, (struct sockaddr* )&client_addr, &addrlen);
-	if(connfd<0){continue;}
+	//the accept syscallalso returns the peers address, addrlen is both input and output.
 	
+	if(connfd<0){continue;}
+	dummy(connfd);
 	close(connfd);
-
 	}
+	
 	return 0;
+}
+
+
+static void dummy(int connfd){
+	string rbuf[64] {};
+	ssize_t n = read(connfd, rbuf, sizeof(rbuf)-1);
+	if(n<0){
+	cout<<"read() error";
+	return;
+	}
+	cout<<"client says: \n"<<rbuf;
+	string wbuf = "world";
+	write(connfd, wbuf, wbuf.length());
 }
