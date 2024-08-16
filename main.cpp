@@ -1,5 +1,6 @@
 #include <asm-generic/socket.h>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <stdio.h>
 #include <endian.h>
@@ -8,7 +9,10 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-
+#include <stdint.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <netinet/ip.h>
 using namespace std;
 
 static void dummy(int connfd);
@@ -61,13 +65,13 @@ int main() {
 
 
 static void dummy(int connfd){
-	string rbuf[64] {};
+	char rbuf[64]=  {};
 	ssize_t n = read(connfd, rbuf, sizeof(rbuf)-1);
 	if(n<0){
 	cout<<"read() error";
 	return;
 	}
 	cout<<"client says: \n"<<rbuf;
-	string wbuf = "world";
-	write(connfd, wbuf, wbuf.length());
+	char wbuf[] = "world";
+	write(connfd, wbuf, strlen(wbuf));
 }
