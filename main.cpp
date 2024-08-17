@@ -1,10 +1,11 @@
 #include <asm-generic/socket.h>
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <netinet/in.h>
 #include <endian.h>
-#include<arpa/inet.h>
+#include <arpa/inet.h>
 #include <cstdlib>
 #include <unistd.h>
 #include <sys/types.h>
@@ -13,25 +14,17 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <netinet/ip.h>
+#include <stdio.h>
+#include <cassert>
+
 
 using namespace std;
 
-static void dummy(int connfd){
-	char rbuf[64]=  {};
-	ssize_t n = read(connfd, rbuf, sizeof(rbuf)-1);
-	cout<<"n: "<<n;
-	if(n<0){
-	printf("read: %s \n",rbuf);
-		return;
-	} else if(n==0){
-	cout<<"client dc";
-	}
-	cout.flush();
-	cout<<"client says: \n"<<rbuf<<flush;
-	
-	char wbuf[] = "world";
-	write(connfd, wbuf, strlen(wbuf));
-}
+static void dummy(int connfd);
+static int32_t read_full(int fd, char* buf, size_t n);
+static int32_t write_all(int fd, const char*buf, size_t n);
+static int32_t one_request(int connfd);
+const size_t k_max_msg = 4096;
 
 int main() {
   	int fd = socket(AF_INET,SOCK_STREAM,0);
@@ -47,6 +40,7 @@ int main() {
 	
 	//this holds an ipv4 address and port.
 	//ntohs and ntohl convert the numbers in req big endian formats.
+	//bind
 	struct sockaddr_in addr= {};
 	addr.sin_family = AF_INET;
 	addr.sin_port = ntohs(1234);
@@ -72,9 +66,48 @@ int main() {
 	//the accept syscall also returns the peers address, addrlen is both input and output.
 	
 	if(connfd<0){continue;}
-	dummy(connfd);
+	while(true){
+		int32_t err = one_request(connfd);
+			if(err){break;}
+		}
 	close(connfd);
 	}
-	
+	//the one_request function parses only one request and responds, until connection is lost.
+	return 0;
+}
+
+
+static void dummy(int connfd){
+	char rbuf[64]=  {};
+	ssize_t n = read(connfd, rbuf, sizeof(rbuf)-1);
+	cout<<"n: "<<n;
+	printf("read: %s \n",rbuf);
+	cout.flush();
+	cout<<"client says: \n"<<rbuf<<flush;
+	//wasnt working because of unflushed buffer. endl also works.
+	char wbuf[] = "world";
+	write(connfd, wbuf, strlen(wbuf));
+}
+static int32_t read_full(int fd, char* buf, size_t n ){
+	while(n>0){
+		ssize_t rv= read(fd,buf,n);
+		assert((size_t)rv <=n);
+		n -= (size_t)rv;
+		buf+=rv;
+	};
+	return 0;
+}
+
+static int32_t write_all(int fd, const char* buf, size_t n){
+	while(n>0){
+	ssize_t rv = write(fd, buf, n);
+	assert((size_t)rv<=n);
+	n-= (size_t)rv;
+	buf+=rv;
+	}
+	return 0;
+}
+static int32_t one_request(int connfd){
+
 	return 0;
 }
