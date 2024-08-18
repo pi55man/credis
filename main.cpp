@@ -7,6 +7,7 @@
 #include <endian.h>
 #include <arpa/inet.h>
 #include <cstdlib>
+#include <ostream>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -20,7 +21,6 @@
 
 using namespace std;
 
-static void dummy(int connfd);
 static int32_t read_full(int fd, char* buf, size_t n);
 static int32_t write_all(int fd, const char*buf, size_t n);
 static int32_t one_request(int connfd);
@@ -77,17 +77,6 @@ int main() {
 }
 
 
-static void dummy(int connfd){
-	char rbuf[64]=  {};
-	ssize_t n = read(connfd, rbuf, sizeof(rbuf)-1);
-	cout<<"n: "<<n;
-	printf("read: %s \n",rbuf);
-	cout.flush();
-	cout<<"client says: \n"<<rbuf<<flush;
-	//wasnt working because of unflushed buffer. endl also works.
-	char wbuf[] = "world";
-	write(connfd, wbuf, strlen(wbuf));
-}
 static int32_t read_full(int fd, char* buf, size_t n ){
 	while(n>0){
 		ssize_t rv= read(fd,buf,n);
@@ -104,10 +93,28 @@ static int32_t write_all(int fd, const char* buf, size_t n){
 	assert((size_t)rv<=n);
 	n-= (size_t)rv;
 	buf+=rv;
-	}
-	return 0;
+	} 
+	return 0; 
 }
 static int32_t one_request(int connfd){
+	//4 bytes header
+	
+	char rbuf[4+k_max_msg+1];
+	read_full(connfd, rbuf, 4);
+	
+	uint32_t len = 0;
+	memcpy(&len, rbuf, 4);
+	
+	read_full(connfd, &rbuf[4],len);
 
-	return 0;
+	rbuf[4+len] = '\0';
+	cout<<"client says: "<<&rbuf[4]<<flush;
+
+
+	const char reply[] = "world";
+	char wbuf[4+sizeof(reply)];
+	len = (uint32_t)strlen(reply);
+	memcpy(wbuf,&len, 4);
+	memcpy(&wbuf[4],reply,len);
+	return write_all(connfd,wbuf,len+4);
 }
