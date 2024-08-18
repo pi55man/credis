@@ -96,6 +96,7 @@ static int32_t write_all(int fd, const char* buf, size_t n){
 	} 
 	return 0; 
 }
+
 static int32_t one_request(int connfd){
 	//4 bytes header
 	
