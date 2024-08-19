@@ -25,7 +25,7 @@ static int32_t read_full(int fd, char* buf, size_t n);
 static int32_t query(int fd, const char* text){
 	uint32_t  len = (uint32_t)strlen(text);
 	
-	char wbuf[4+k_max_msg+1];
+	char wbuf[4+k_max_msg];
 	memcpy(wbuf, &len, 4);
 	memcpy(&wbuf[4],text, len);
 	write_all(fd, wbuf, 4+len);
@@ -75,5 +75,6 @@ static int32_t read_full(int fd, char* buf, size_t n){
 		n-=(size_t)rv;
 	buf+=rv;
 	}
+	return 0;
 }
 
