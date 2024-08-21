@@ -103,8 +103,8 @@ static int32_t one_request(int connfd){
 	//4 bytes header
 	
 	char rbuf[4+k_max_msg+1];
-	read_full(connfd, rbuf, 4);
-	
+	int32_t err = read_full(connfd, rbuf, 4);
+	if(err){cout<<"eof";}
 	uint32_t len = 0;
 	memcpy(&len, rbuf, 4);
 	
@@ -118,5 +118,5 @@ static int32_t one_request(int connfd){
 	len = (uint32_t)strlen(reply);
 	memcpy(wbuf,&len, 4);
 	memcpy(&wbuf[4],reply,len);
-	return write_all(connfd,wbuf,len+4);
+	return write_all(connfd,wbuf,4+len); 
 }

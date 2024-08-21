@@ -34,10 +34,11 @@ static int32_t query(int fd, const char* text){
 	read_full(fd, rbuf, 4);
 
 	memcpy(&len, rbuf, 4);
-
-	read_full(fd, &rbuf[4],len);
+	int32_t err;
+	err = read_full(fd, &rbuf[4],len);
+	if(err){cout<<"read() error"; return err;}
 	rbuf[4+len]='\0';
-	cout<<"server says: " <<&rbuf[4]<<flush;
+	printf("server says: %s\n",&rbuf[4]);
 	return 0; 
 }
 
@@ -61,6 +62,7 @@ int main(){
 static int32_t write_all(int fd, const char* buf, size_t n){
 	while(n>0){
 	ssize_t rv = write(fd, buf, n);
+	if(rv<=0){return -1;}
 	assert((size_t)rv<=n);
 	n-= (size_t)rv;
 	buf+=rv;
@@ -69,7 +71,7 @@ static int32_t write_all(int fd, const char* buf, size_t n){
 }
 
 static int32_t read_full(int fd, char* buf, size_t n){
-	while(n<0){
+	while(n>0){
 	ssize_t rv = read(fd, buf, n);
 	assert((size_t)rv<=n);
 		n-=(size_t)rv;
