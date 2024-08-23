@@ -1,4 +1,5 @@
 #include <asm-generic/socket.h>
+#include <cerrno>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -48,7 +49,15 @@ struct Conn{
 	uint8_t wbuf[4+k_max_msg];
 };
 
+//forward declarations
 static int32_t accept_new_conn(vector<Conn*>&fd2conn, int fd);
+static bool try_flush_buffer(Conn* conn);
+static void state_res(Conn* conn);
+static void state_req(Conn* conn);
+static void connection_io(Conn* conn);
+static bool try_one_request(Conn* conn);
+static void conn_put(vector<Conn*>&fd2conn, struct Conn* conn);
+
 int main(){
 	int fd = socket(AF_INET, SOCK_STREAM, 0);
 	struct sockaddr_in addr= {};
@@ -100,7 +109,6 @@ int main(){
 
 	return 0;
 }
-
 static void conn_put(vector<Conn*>&fd2conn, struct Conn* conn){
 
 	if(fd2conn.size()<=(size_t)conn->fd){
@@ -140,6 +148,82 @@ static void connection_io(Conn* conn){
 	}
 }
 
+static void state_req(Conn* conn){
+
+}
 
 
+static bool try_fill_buffer(Conn* conn){
+	assert(conn->rbuf_size < sizeof(conn->rbuf));
+	ssize_t rv = 0;
+	do{
+		size_t cap  = sizeof(conn->rbuf) - conn->rbuf_size;
+		rv = read(conn->fd, &conn->rbuf[conn->rbuf_size],cap);
+	} while (rv<0 && errno == EINTR);
+	if(rv < 0 && errno == EAGAIN){
+		return false;
+	}
+	if(rv<0){
+		conn->state = STATE_END;
+		return false;
+	}
+	if(rv==0){
+		if(conn->rbuf_size>0){
+			cout<<"unexpected eof"<<flush;
+		} else { cout<<"eof"<<flush;}
+	conn->state = STATE_END;
+	return false;
+	}
+	while(try_one_request(conn)){}
+	return (conn->state == STATE_REQ);
+}
 
+
+static bool try_one_request(Conn* conn) {
+	if(conn->rbuf_size < 4){return false;}
+	uint32_t len {0};
+	memcpy(&len,&conn->rbuf[0],4);
+	if(len>k_max_msg){conn->state = STATE_END; return false;}
+	
+	if(4+len > conn->rbuf_size){return false;}
+	printf("client says: %.*s\n",len,&conn->rbuf[4]);
+	
+	//generating echoing response
+	memcpy(&conn->wbuf[0],&len,4);
+	memcpy(&conn->wbuf[4],&conn->rbuf[4],len);
+	conn->wbuf_size= 4+len;
+	size_t remain = conn->rbuf_size - 4 - len;
+	if(remain){
+		memmove(conn->rbuf,&conn->rbuf[4+len],remain);
+	}
+	conn->rbuf_size = remain;
+
+	conn->state = STATE_RES;
+	state_res(conn);
+
+	return (conn->state == STATE_REQ);
+}
+
+static void state_res(Conn* conn){
+
+	while(try_flush_buffer(conn)){}
+
+}
+static bool try_flush_buffer(Conn* conn){
+	ssize_t rv = 0;
+	do{
+		size_t remain = conn->wbuf_size - conn->wbuf_sent;
+		rv = write(conn->fd,&conn->wbuf[conn->wbuf_sent] ,remain);
+	}while(rv<0 && errno == EINTR);
+	if(rv<0 && errno == EAGAIN){return false;}
+	if(rv<0){conn->state = STATE_END;return false;}
+	conn->wbuf_sent += (size_t)rv;
+	assert(conn->wbuf_sent<=conn->wbuf_size);
+	if(conn->wbuf_sent == conn->wbuf_size) {
+		conn->state = STATE_REQ;
+		conn->wbuf_sent = 0;
+		conn->wbuf_size =0;
+		return false;
+	}
+	return true;
+}
