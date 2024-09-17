@@ -19,14 +19,13 @@
 
 using namespace std;
 
-const size_t k_max_msg = 4096;
+const  size_t   k_max_msg = 4096;
 static int32_t write_all(int fd, const char* buf, size_t n);
 static int32_t read_full(int fd, char* buf, size_t n);
 
 static int32_t send_req(int fd, const char* text){
 	uint32_t len = (uint32_t)strlen(text);
 	if(len>k_max_msg){return -1;}
-
 	char wbuf[4+k_max_msg];
 	memcpy(wbuf,&len,4);
 	memcpy(&wbuf[4],text,len);
@@ -34,7 +33,6 @@ static int32_t send_req(int fd, const char* text){
 }
 
 static int32_t read_res(int fd){
-
 	char rbuf[4+k_max_msg+1];
 	errno = 0;
 	int32_t err = read_full(fd,rbuf,4);
@@ -51,7 +49,6 @@ static int32_t read_res(int fd){
 	rbuf[4+len] = '\0';
 	printf("server says: %s\n",&rbuf[4]);
 	return 0;
-
 }
 	
 int main(){
@@ -79,7 +76,6 @@ int main(){
 	L_DONE:
 		close(fd);
 		return 0;
-
 }
 
 static int32_t write_all(int fd, const char* buf, size_t n){
@@ -102,4 +98,3 @@ static int32_t read_full(int fd, char* buf, size_t n){
 	}
 	return 0;
 }
-
