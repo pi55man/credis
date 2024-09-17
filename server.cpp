@@ -38,7 +38,6 @@ enum {
 	STATE_END = 2,
 };
 
-
 struct Conn{
 	int fd = -1;
 	uint32_t state = 0;
@@ -89,7 +88,7 @@ int main(){
 		}
 	
 		int rv = poll(poll_args.data(), (nfds_t)poll_args.size(),1000);
-		if(rv<0){cout<<"poll";}
+		if(rv<0){cout<<"poll"<<flush;}
 		for(size_t i = 1;i<poll_args.size();++i){
 			if(poll_args[i].revents){
 				Conn* conn = fd2conn[poll_args[i].fd];
@@ -123,7 +122,7 @@ static int32_t accept_new_conn(vector<Conn*>&fd2conn, int fd){
 	socklen_t socklen = sizeof(client_addr);
 	int connfd = accept(fd, (struct sockaddr*)&client_addr,&socklen);
 	if(connfd<0){
-		cout<<"accept() error";
+		printf("accept error()");
 		return -1;
 	}
 
@@ -205,9 +204,7 @@ static bool try_one_request(Conn* conn) {
 }
 
 static void state_res(Conn* conn){
-
 	while(try_flush_buffer(conn)){}
-
 }
 static bool try_flush_buffer(Conn* conn){
 	ssize_t rv = 0;
